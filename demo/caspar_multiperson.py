@@ -1,9 +1,9 @@
+import cv2
 import os
 import sys
 
 import numpy as np
 
-#sys.path.append(os.path.dirname(__file__) + "/../")
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
 
 from scipy.misc import imread, imsave
@@ -38,7 +38,6 @@ sess, inputs, outputs = predict.setup_pose_prediction(cfg)
 # Read image from file
 file_name = "demo/image_multi.png"
 image = imread(file_name, mode='RGB')
-
 image_batch = data_to_input(image)
 
 # Compute prediction with the CNN
@@ -49,14 +48,5 @@ detections = extract_detections(cfg, scmap, locref, pairwise_diff)
 unLab, pos_array, unary_array, pwidx_array, pw_array = eval_graph(sm, detections)
 person_conf_multi = get_person_conf_multicut(sm, unLab, unary_array, pos_array)
 
-img = np.copy(image)
-
-visim_multi = img.copy()
-
-fig = plt.imshow(visim_multi)
-draw_multi.draw(visim_multi, dataset, person_conf_multi)
-fig.axes.get_xaxis().set_visible(False)
-fig.axes.get_yaxis().set_visible(False)
-
-plt.show()
-visualize.waitforbuttonpress()
+pose_image = draw_multi.draw_pose(image, dataset, person_conf_multi)
+cv2.imwrite('/home/brainoft/Desktop/caspar_pose.jpg', pose_image)

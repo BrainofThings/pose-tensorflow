@@ -1,3 +1,4 @@
+import cv2
 import math
 import numpy as np
 
@@ -15,6 +16,50 @@ min_match_dist = 200
 marker_size = 5
 
 draw_conf_min_count = 3
+
+# Colors
+WHITE = (255, 255, 255)
+BLUE = (255, 0, 0)
+GREEN = (0, 255, 0)
+RED = (0, 0, 255)
+YELLOW = (0, 255, 255)
+MAGENTA = (255, 0, 255)
+CYAN = (255, 0, 0)
+PURPLE = (128, 0, 128)
+VIOLET = (238, 130, 238)
+MEDIUM_TURQOISE = (204, 209, 72)
+MEDIUM_BLUE = (180, 0, 0)
+SKY_BLUE = (235, 206, 135)
+ORANGE = (0, 165, 255)
+GOLD = (0, 215, 255)
+ORANGE_RED = (0, 69, 255)
+LIGHT_BLUE = (230, 216, 173)
+LIGHT_GREEN = (144, 238, 144)
+LIGHT_YELLOW = (224, 255, 255)
+LIME_GREEN = (50, 205, 50)
+YELLOW_GREEN = (50, 205, 154)
+DARK_GREEN = (0, 100, 0)
+
+JOINT_COLORS = {
+    (0,1): BLUE,
+    (0,2): LIME_GREEN,
+    (1,3): GOLD,
+    (2,4): CYAN,
+    (5,7): ORANGE_RED,
+    (5,17): MEDIUM_TURQOISE,
+    (6,8): ORANGE,
+    (6,17): VIOLET,
+    (7,9): ORANGE,
+    (8,10): ORANGE_RED,
+    (11,13): VIOLET,
+    (11,17): YELLOW,
+    (12,14): MEDIUM_TURQOISE,
+    (12,17): GREEN,
+    (13,15): MEDIUM_TURQOISE,
+    (14,16): VIOLET,
+}
+
+FACE_JOINTS = [(0,1), (0,2), (1,3), (2,4)]
 
 
 def get_ref_points(person_conf):
@@ -138,6 +183,58 @@ class PersonDraw:
 
         self.prev_person_conf = person_conf
         self.prev_color_assignment = color_assignment
+
+    def draw_pose(self, visim, dataset, person_conf):
+        visim = cv2.cvtColor(visim, cv2.COLOR_BGR2RGB)
+        minx = 2 * marker_size
+        miny = 2 * marker_size
+        maxx = visim.shape[1] - 2 * marker_size
+        maxy = visim.shape[0] - 2 * marker_size
+
+        num_people = person_conf.shape[0]
+        for pidx in range(num_people):
+            if np.sum(person_conf[pidx, :, 0] > 0) < draw_conf_min_count:
+                continue
+
+            joint_coords = {}
+            for kidx1, kidx2 in dataset.get_pose_segments():
+                #print("Joint: {} {}, Color: {}".format(kidx1, kidx2, JOINT_COLORS[(kidx1, kidx2)]))
+                p1 = (int(math.floor(person_conf[pidx, kidx1, 0])), int(math.floor(person_conf[pidx, kidx1, 1])))
+                p2 = (int(math.floor(person_conf[pidx, kidx2, 0])), int(math.floor(person_conf[pidx, kidx2, 1])))
+                if check_point(p1[0], p1[1], minx, miny, maxx, maxy) and check_point(p2[0], p2[1], minx, miny, maxx,
+                                                                                     maxy):
+                    joint_coords[kidx1] = p1
+                    joint_coords[kidx2] = p2
+                    if (kidx1, kidx2) in FACE_JOINTS:
+                        continue
+                    cv2.line(visim, p1, p2, JOINT_COLORS[(kidx1, kidx2)], 3)
+                    cv2.circle(visim, p1, 3, WHITE, thickness=-1)
+                    cv2.circle(visim, p2, 3, WHITE, thickness=-1)
+            if 5 in joint_coords and 6 in joint_coords:
+                x, y = tuple(map(lambda l, r: int((l + r)/2), joint_coords[5], joint_coords[6]))
+                neck = (x, y-3)
+                cv2.line(visim, joint_coords[5], neck, JOINT_COLORS[(5,17)], 3)
+                cv2.line(visim, joint_coords[6], neck, JOINT_COLORS[(6,17)], 3)
+                cv2.circle(visim, joint_coords[5], 3, WHITE, thickness=-1)
+                cv2.circle(visim, joint_coords[6], 3, WHITE, thickness=-1)
+                if 11 in joint_coords:
+                    cv2.line(visim, joint_coords[11], neck, JOINT_COLORS[(11,17)], 3)
+                    cv2.circle(visim, joint_coords[11], 3, WHITE, thickness=-1)
+                if 12 in joint_coords:
+                    cv2.line(visim, joint_coords[12], neck, JOINT_COLORS[(12,17)], 3)
+                    cv2.circle(visim, joint_coords[12], 3, WHITE, thickness=-1)
+                cv2.circle(visim, neck, 3, WHITE, thickness=-1)
+            if 4 in joint_coords:
+                cv2.circle(visim, joint_coords[4], 4, MAGENTA, thickness=-1)
+            if 3 in joint_coords:
+                cv2.circle(visim, joint_coords[3], 4, PURPLE, thickness=-1)
+            if 2 in joint_coords:
+                cv2.circle(visim, joint_coords[2], 4, GOLD, thickness=-1)
+            if 1 in joint_coords:
+                cv2.circle(visim, joint_coords[1], 4, ORANGE, thickness=-1)
+            if 0 in joint_coords:
+                cv2.circle(visim, joint_coords[0], 4, ORANGE_RED, thickness=-1)
+        return visim
 
 
 
