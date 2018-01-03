@@ -60,6 +60,11 @@ $ cd -
 
 # Run demo of multi person pose estimation
 $ TF_CUDNN_USE_AUTOTUNE=0 python3 demo/demo_multiperson.py
+
+# Run demo of caspar multi person pose estimation
+$ TF_CUDNN_USE_AUTOTUNE=0 python3 demo/caspar_multiperson.py
+
+TF_CUDNN_USE_AUTOTUNE=0 python3 demo/pose_multiperson.py compute_pose_plot -b 1508304183 -e 1508304292 -s 0.5 -c kitchen1_camera1 ecolife-poc /home/brainoft/Desktop/demos/ecolife-poc/images/falling /home/brainoft/Desktop/demos/ecolife-poc/movie/falling
 ```
 
 ## Training models
