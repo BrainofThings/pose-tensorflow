@@ -5,6 +5,10 @@ import sys
 import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
+# HACK: Remove learning repo since it has its own dataset module which conflicts with this repo
+learning_repo_path = '/home/brainoft/learning/offline_learning'
+if learning_repo_path in sys.path:
+    sys.path.remove(learning_repo_path)
 
 from scipy.misc import imread, imsave
 

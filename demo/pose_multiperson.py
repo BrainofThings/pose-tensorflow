@@ -9,6 +9,10 @@ import bisect
 import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../")
+# HACK: Remove learning repo since it has its own dataset module which conflicts with this repo
+learning_repo_path = '/home/brainoft/learning/offline_learning'
+if learning_repo_path in sys.path:
+    sys.path.remove(learning_repo_path)
 
 from scipy.misc import imread
 from config import load_config
@@ -146,8 +150,8 @@ def morph(img):
 @click.argument('hostname', type=str)
 @click.argument('img_dir', type=click.Path(file_okay=False))
 @click.argument('output_dir', type=click.Path(file_okay=False))
-@click.option('--begin_time', '-b', type=int, default=None, help="start time in epoch seconds")
-@click.option('--end_time', '-e', type=int, default=None, help="stop time in epoch seconds")
+@click.option('--begin_time', '-b', type=float, default=None, help="start time in epoch seconds")
+@click.option('--end_time', '-e', type=float, default=None, help="stop time in epoch seconds")
 @click.option('--step_size', '-s', type=float, default=0.5, help="step size in seconds")
 @click.option("--camera_list", "-c", type=str, default=None,
               help="Comma separated list of cameras for which heatmap should be generated")
@@ -179,7 +183,7 @@ def compute_pose_plot(hostname, img_dir, output_dir, begin_time, end_time, step_
 
     # process images
     for camera in cameras:
-        camera_output_dir = os.path.join(output_dir, camera)
+        camera_output_dir = os.path.join(output_dir, camera) if len(cameras) > 1 else output_dir
         if not os.path.exists(camera_output_dir):
             os.makedirs(camera_output_dir)
         camera_params = host_configs["camera_bounds"]
@@ -189,7 +193,7 @@ def compute_pose_plot(hostname, img_dir, output_dir, begin_time, end_time, step_
         else:
             config = OPEN_POSE_CONFIG
         prev_img = None
-        for t_sec in np.arange(begin_time, end_time + 1, step_size):
+        for t_sec in np.arange(begin_time, end_time + step_size, step_size):
             print("Processing {}".format(t_sec))
             start = time.time()
             img_path = image_index.image_filename(camera, t_sec)
@@ -212,7 +216,7 @@ def compute_pose_plot(hostname, img_dir, output_dir, begin_time, end_time, step_
             background = np.zeros_like(img_rgb) 
             pose_image = draw_multi.draw_pose(background, dataset, person_conf_multi)
 
-            output_file = os.path.join(camera_output_dir, '{}.jpg'.format(int(t_sec * 1000)))
+            output_file = os.path.join(camera_output_dir, '{}.jpg'.format(int(np.around(t_sec * 1000))))
             cv2.imwrite(output_file, pose_image)
             print("Finished processing {} in {} secs".format(t_sec, time.time() - start))
 
